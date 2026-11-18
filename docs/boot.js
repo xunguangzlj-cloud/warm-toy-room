@@ -4,7 +4,29 @@
   const actions = $(".actions"), play = $("#play"), mobile = $("#mobile"), look = $("#look");
   const fullscreen = $("#fullscreen"), screenNotice = $("#screen-notice");
   const errorDetails = $('#load-details'), errorText = $('#load-error');
-  const resources = globalThis.TOYROOM_PAYLOAD;
+  const fullManifest = globalThis.TOYROOM_PAYLOAD;
+  function deviceManifest() {
+    const catalog = globalThis.TOYROOM_PROFILES;
+    if (!catalog) return fullManifest;
+    let gl;
+    try {
+      gl = document.createElement('canvas').getContext('webgl2');
+      if (!gl) return fullManifest;
+      // 普通纹理和高动态光照分别检测。桌面按钮和触摸按钮可能使用同一块显卡。
+      const bc = gl.getExtension('WEBGL_compressed_texture_s3tc') && gl.getExtension('EXT_texture_compression_rgtc');
+      const color = bc ? 's3tc' : gl.getExtension('WEBGL_compressed_texture_etc') ? 'etc2' : 'both';
+      const astc = gl.getExtension('WEBGL_compressed_texture_astc');
+      const hdr = gl.getExtension('EXT_texture_compression_bptc') ? 'bptc'
+        : astc?.getSupportedProfiles?.().includes('hdr') ? 'astc' : 'both';
+      const profile = catalog.profiles[color + '-' + hdr];
+      if (!profile) return fullManifest;
+      const parts = [profile.head, ...profile.groups.flatMap(key => catalog.groups[key]), profile.tail];
+      return {...fullManifest, 'index.pck': {type:fullManifest['index.pck'].type, originalBytes:profile.originalBytes,
+        parts, bytes:parts.reduce((total, part) => total + part.bytes, 0)}};
+    } catch (_) { return fullManifest; }
+    finally { gl?.getExtension('WEBGL_lose_context')?.loseContext(); }
+  }
+  let resources = deviceManifest();
   let ready = false, starting = false, hasLocked = false, failed = false, mobileMode = false, renderHeight = 720;
   let resizeFrame, noticeTimer, lastProgress = 0;
   let startupStage = 'download';
@@ -90,20 +112,42 @@
   }
   const assets = new ToyroomAssets(resources, ({ loaded, total, cached }) => {
     if (failed) return;
-    progress.value = loaded / total * 100;
     if (Date.now() - lastProgress < 100 && loaded < total) return;
     lastProgress = Date.now();
+    progress.value = loaded / total * 100;
     status.textContent = loaded >= total ? "下载完成，正在解压并准备房间…"
       : `${cached ? "读取已缓存资源" : "下载游戏资源"} · ${mib(loaded)} / ${mib(total)} MiB`;
     startupStage=loaded>=total?'decode':'download';
   });
-  window.toyroomAssetFetch = file => assets.response(file);
+  let earlyPack = null;
+  window.toyroomAssetFetch = file => {
+    if (file === 'index.pck' && earlyPack) {
+      const pending = earlyPack;
+      earlyPack = null;
+      return pending;
+    }
+    const response = assets.response(file);
+    if (file === 'index.wasm' && !earlyPack) {
+      // 只预取流头与少量压缩分片；引擎就绪后才分配完整资源包缓冲区。
+      earlyPack = assets.response('index.pck');
+      earlyPack.catch(() => {});
+    }
+    return response;
+  };
+  const cachedChoice = assets.findCachedManifest([resources, fullManifest]).then(saved => {
+    if (saved) {
+      resources = saved;
+      assets.manifest = saved;
+      assets.total = Object.values(saved).reduce((sum, item) => sum + item.bytes, 0);
+      if (!starting) status.textContent = '游戏已保存在本机 · 本次无需重新下载整包';
+    }
+  });
   window.toyroomFatal = showError;
   window.toyroomStartup = event => {
     if (ready || failed) return;
     startupStage=event.phase;
     if (event.phase==='decode') {
-      if (assets.loaded.size && [...assets.loaded.values()].reduce((a,b)=>a+b,0) < assets.total) return;
+      if (assets.loaded.size && assets.loadedBytes < assets.total) return;
       status.textContent=`解压游戏资源 · ${Math.min(100,Math.round(event.bytes/event.total*100))}%`;
     } else {
       record(event);
@@ -131,6 +175,7 @@
     const size = screenSize(); canvas.width = size.width; canvas.height = size.height; resize();
     const args = ["--resolution", `${size.width}x${size.height}`];
     if (touch) args.push("--", "--web-mobile");
+    await cachedChoice;
     const engine = new Engine({ executable: "index", mainPack: "index.pck", canvas,
       canvasResizePolicy: 0, focusCanvas: true, args,
       fileSizes: Object.fromEntries(Object.entries(resources).map(([file, a]) => [file, a.originalBytes])),
@@ -160,9 +205,6 @@
     actions.hidden = true;
   } else {
     status.textContent = `首次载入约 ${mib(assets.total)} MiB · 已下载资源会保存在本机`;
-    assets.allCached().then(saved => {
-      if (saved && !starting) status.textContent = "游戏已保存在本机 · 本次无需重新下载整包";
-    });
     play.onclick = () => start(false); mobile.onclick = () => start(true);
   }
   updateFullscreen();

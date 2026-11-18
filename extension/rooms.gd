@@ -52,6 +52,37 @@ func _ready() -> void:
 	maps[1].hide()
 	maps[2].hide()
 
+# 基类在场景就绪后延迟调用此方法。先装好首帧光照，避免先画一次未烘焙的房间。
+func _initialize_gi() -> void:
+	if ResourceLoader.exists("res://assets/lightmaps/room_v8.lmbake"):
+		var baked: LightmapGIData = load("res://assets/lightmaps/room_v8.lmbake")
+		var missing := PackedStringArray()
+		for index in baked.get_user_count():
+			if lightmap.get_node_or_null(baked.get_user_path(index)) == null:
+				missing.append(str(baked.get_user_path(index)))
+		if baked.get_user_count() > 0 and not baked.lightmap_textures.is_empty() and missing.is_empty():
+			lightmap.light_data = _probe_lit_thin_details(baked)
+			gi.visible = false
+			for lamp in get_children():
+				if lamp is Light3D and lamp.name != "WindowSun" and lamp.name != "WindowFill":
+					lamp.shadow_enabled = false
+		elif not missing.is_empty():
+			push_warning("烘焙光照缺少场景节点：" + str(missing))
+	if lightmap.light_data == null:
+		lightmap.visible = false
+	lightmap.specular_intensity = 0.55
+	if light_controls != null:
+		light_controls.history.sync_baked_shadows()
+		light_controls.apply_values()
+	# 初始化动作和碰撞体，让可操作的第一帧直接显示房间，实际碰撞时再播放特效。
+	for person in [actor, companion]:
+		person.prepare_action_effects()
+	await RenderingServer.frame_post_draw
+	ready_to_play = true
+	actor.can_control = true
+	_show_toast("寻找星光，探索墙后的小屋 · Alt 切换同伴",5)
+	print("ROOM_READY visual_scale=0.405 lightmap=",lightmap.light_data!=null," gi_fallback=",gi.visible)
+
 func _build_room() -> void:
 	super._build_room()
 	# 在原交互管理器初始化前登记，拾取、蓄力、碰撞声音与原件走同一条路径。

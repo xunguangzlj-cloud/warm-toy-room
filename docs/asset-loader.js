@@ -7,6 +7,7 @@
       this.fetch = globalThis.fetch.bind(globalThis);
       this.total = Object.values(manifest).reduce((n, a) => n + a.bytes, 0);
       this.loaded = new Map();
+      this.loadedBytes = 0;
       this.active = 0;
       this.waiters = [];
       this.groups = new Set();
@@ -36,25 +37,27 @@
       catch (_) { this.cacheBroken = true; return null; }
     }
     track(part, bytes, cached = false) {
-      this.loaded.set(part.path, Math.min(part.bytes, bytes));
-      const loaded = [...this.loaded.values()].reduce((a, b) => a + b, 0);
-      this.onProgress({ loaded, total: this.total, cached });
+      const current = Math.min(part.bytes, bytes);
+      this.loadedBytes += current - (this.loaded.get(part.path) || 0);
+      this.loaded.set(part.path, current);
+      this.onProgress({loaded:this.loadedBytes, total:this.total, cached});
     }
-    async allCached() {
+    async findCachedManifest(choices) {
       const cache = await this.cache;
-      if (!cache) return false;
+      if (!cache) return null;
       try {
-        const parts = Object.values(this.manifest).flatMap(a => a.parts);
-        // Metadata only: opening all 69 Response bodies before Play can read the
-        // entire 271 MiB cache on some browsers. Each part is validated on use.
-        const keys = new Set((await this.deadline(cache.keys())).map(k => k.url));
-        return parts.every(p => keys.has(new URL(p.path, location.href).href));
-      } catch (_) { return false; }
+        const keys = new Set((await this.deadline(cache.keys(), 1500)).map(k => k.url));
+        return choices.find(manifest => Object.values(manifest).every(asset =>
+          asset.parts.every(part => keys.has(new URL(part.path, location.href).href)))) || null;
+      } catch (_) { return null; }
     }
-    save(cache, part, bytes) {
+    async save(cache, part, bytes) {
       // Saving is optional and off the download/decode critical path. Bound the
       // outstanding bodies to 12 MiB instead of queuing the whole game in RAM.
-      if (!cache || this.cacheBroken || this.saves.size >= 3) return;
+      if (!cache || this.cacheBroken) return;
+      // 等待一个写入空位，避免慢速手机漏存分片。后续请求仍可并行。
+      while (this.saves.size >= 3) await Promise.race(this.saves);
+      if (this.cacheBroken) return;
       const job = this.deadline(cache.put(part.path, new Response(bytes, {headers:{
         "Content-Type":"application/octet-stream", "Content-Length":String(bytes.length),
       }}))).catch(() => {this.cacheBroken = true; this.stats.cacheFailures++;});
@@ -68,7 +71,7 @@
       try {
         const wanted = new Set(Object.values(this.manifest).flatMap(a => a.parts.map(p => new URL(p.path, location.href).href)));
         const keys = await this.deadline(cache.keys());
-        await this.deadline(Promise.all(keys.filter(k => !wanted.has(k.url)).map(k => cache.delete(k))));
+        await this.deadline(Promise.all(keys.filter(k => k.url.startsWith(new URL('payload/', location.href).href) && !wanted.has(k.url)).map(k => cache.delete(k))));
       } catch (_) { /* Storage is optional, including on private browser tabs. */ }
     }
     async chunk(part, group) {
@@ -124,7 +127,7 @@
             }
             clearTimeout(timeout);
             this.track(part, bytes.length);
-            this.save(cache, part, bytes);
+            await this.save(cache, part, bytes);
             return bytes;
           } catch (error) {
             abort?.abort(); reader?.cancel().catch(() => {});
@@ -165,7 +168,7 @@
               if (result.error) throw result.error;
               bytes = result.data; offset = 0;
             }
-            const end = Math.min(offset + 65536, bytes.length);
+            const end = Math.min(offset + 262144, bytes.length);
             controller.enqueue(bytes.subarray(offset, end)); offset = end;
             if (offset === bytes.length) { pending.delete(index++); bytes = null; prefetch(); }
           } catch (error) { cancel(); controller.error(error); }

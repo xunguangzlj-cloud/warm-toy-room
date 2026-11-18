@@ -17,7 +17,9 @@
 
 ## 宣传图
 
-两张图片均采用本扩展版的实机画面，右下角二维码可直接进入游戏。
+玩具房全画面实机截图（1280 × 720）：[俯视全景](https://xunguangzlj-cloud.github.io/warm-toy-room/press/toy-room-overview.png)　[角色视角](https://xunguangzlj-cloud.github.io/warm-toy-room/press/toy-room-player-view.png)
+
+客厅和庭院的实机海报附有试玩二维码。
 
 [客厅 · 午后的钟声](https://xunguangzlj-cloud.github.io/warm-toy-room/press/living-room.png)　[庭院 · 风铃花圃](https://xunguangzlj-cloud.github.io/warm-toy-room/press/courtyard.png)
 

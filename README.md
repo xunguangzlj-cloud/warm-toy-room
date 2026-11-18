@@ -19,7 +19,7 @@
 
 两张图片均采用本扩展版的实机画面，右下角二维码可直接进入游戏。
 
-[客厅 · 午后的钟声](press/living-room.png)　[庭院 · 风铃花圃](press/courtyard.png)
+[客厅 · 午后的钟声](https://xunguangzlj-cloud.github.io/warm-toy-room/press/living-room.png)　[庭院 · 风铃花圃](https://xunguangzlj-cloud.github.io/warm-toy-room/press/courtyard.png)
 
 ## 项目文件
 

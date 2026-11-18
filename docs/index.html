@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="从玩具房的小门出发，去客厅为落地钟上发条，再到庭院引水，让花圃绽放。">
+  <meta name="theme-color" content="#21150f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <title>暖光玩具房 · 客厅与庭院</title>
+  <link rel="stylesheet" href="shell.css">
+  <link rel="stylesheet" href="touch.css">
+  <script defer src="index.js"></script>
+  <script defer src="payload.js"></script>
+  <script defer src="vendor/fflate-0.8.2.js"></script>
+  <script defer src="asset-loader.js"></script>
+  <script defer src="touch.js"></script>
+  <script defer src="boot.js"></script>
+</head>
+<body>
+  <main>
+    <button id="fullscreen" type="button" data-layout="fullscreen" aria-label="全屏游戏">全屏</button>
+    <div id="screen-notice" role="status" hidden></div>
+    <canvas id="game" width="1280" height="720" tabindex="0" aria-label="暖光玩具房游戏画面"></canvas>
+    <div id="look" hidden>点击画面锁定鼠标 · Esc 暂停</div>
+    <div id="touch-hud" hidden aria-label="手机试玩控制">
+      <div class="touch-menu">
+        <button type="button" data-layout="swap" data-touch-key="swap">换人</button>
+        <button type="button" data-layout="companion" data-touch-key="companion">同伴</button>
+        <button type="button" data-layout="pause" data-touch-key="pause">暂停</button>
+        <button type="button" data-layout="lighting" data-touch-key="options">光线</button>
+        <button type="button" data-layout="settings" id="touch-settings">按键</button>
+      </div>
+      <div id="orientation-tip" hidden>横屏游玩效果更好</div>
+      <div id="touch-tip">拖动画面转动视角</div>
+      <div id="touch-stick" data-layout="stick" aria-label="移动摇杆：轻推走路，推远跑步"><span></span></div>
+      <div class="touch-actions">
+        <button type="button" data-layout="roll" data-touch-key="roll">翻滚</button>
+        <button type="button" data-layout="jump" data-touch-key="jump">跳跃</button>
+        <button type="button" data-layout="context" data-touch-key="context" aria-label="互动或拿起放下物品">互动<br>拿放</button>
+        <button type="button" data-layout="throw" data-touch-key="throw" aria-label="按住蓄力，松手投掷">投掷</button>
+      </div>
+    </div>
+    <section id="touch-editor" aria-label="按键设置" hidden>
+      <header><strong>按键设置</strong><span>拖动圆钮换位置，点选后调整大小</span></header>
+      <div class="edit-size"><label for="touch-size" id="touch-selected">移动摇杆</label><input id="touch-size" type="range" min="65" max="165" step="5" value="100"><output id="touch-size-value">100%</output></div>
+      <div class="edit-actions"><button id="touch-reset" type="button">恢复默认</button><button id="touch-cancel" type="button">取消</button><button id="touch-save" type="button">保存并继续</button></div>
+      <small id="touch-save-status"></small>
+    </section>
+    <section id="intro" aria-labelledby="title">
+      <div class="card">
+        <div class="edition-row"><p class="edition"><span aria-hidden="true">✦</span> 客厅与庭院扩展版</p>
+          <a class="repo-button" href="https://github.com/xunguangzlj-cloud/warm-toy-room" target="_blank" rel="noopener noreferrer" aria-label="在新窗口打开本游戏的 GitHub 仓库">GitHub <span aria-hidden="true">↗</span></a>
+        </div>
+        <h1 id="title">暖光玩具房</h1>
+        <p class="subtitle">沿着书本和线轴寻找五枚星光，也可从地毯旁的小门去客厅和庭院。</p>
+        <div class="actions">
+          <button type="button" id="play">电脑试玩</button>
+          <button type="button" class="secondary" id="mobile">手机试玩</button>
+        </div>
+        <progress id="progress" max="100" value="0" hidden></progress>
+        <p id="status" role="status" aria-live="polite"></p>
+        <details id="load-details" hidden><summary>查看错误详情</summary><pre id="load-error"></pre></details>
+        <p class="controls"><kbd>WASD</kbd> 移动 <kbd>空格</kbd> 跳跃 <kbd>E</kbd> 互动 <kbd>L</kbd> 光线与画质</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

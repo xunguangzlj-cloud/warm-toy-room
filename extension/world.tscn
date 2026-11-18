@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://.godot/exported/133200997/export-5e22ead3afe153d49794e5fbf75afb41-room.scn" id="1"]
+[ext_resource type="Script" path="res://extension/rooms.gd" id="2"]
+
+[node name="ToyRoom" instance=ExtResource("1")]
+script = ExtResource("2")

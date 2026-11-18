@@ -1,0 +1,5 @@
+*.bin binary
+*.meshbin binary
+*.otf binary
+*.png binary
+*.jpg binary

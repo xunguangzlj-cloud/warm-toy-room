@@ -1,0 +1,50 @@
+#touch-hud {
+  position:fixed; inset:0; z-index:30; pointer-events:none; touch-action:none;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+}
+.touch-menu, .touch-actions { display:contents; }
+#touch-hud [data-layout], body[data-mobile] #fullscreen {
+  position:fixed; right:auto; bottom:auto; transform:translate(-50%,-50%);
+  display:grid; place-content:center; pointer-events:auto; touch-action:none;
+  min-width:0; min-height:0; padding:0; margin:0; border-radius:50%;
+  border:1.5px solid #ffffffa6; background:rgba(255,255,255,.18); color:white;
+  box-shadow:0 2px 8px #00000022,inset 0 0 1px #ffffff66;
+  text-shadow:0 1px 4px #000000aa; font-weight:600; line-height:1.15; text-align:center;
+  -webkit-tap-highlight-color:transparent; user-select:none;
+}
+#touch-hud [data-held] { background:rgba(255,255,255,.42); border-color:#fff; }
+#touch-stick { overflow:visible; }
+#touch-stick span {
+  position:absolute; inset:29%; border-radius:50%; background:rgba(255,255,255,.60);
+  border:1px solid #ffffffbb; box-shadow:0 2px 8px #00000022; pointer-events:none;
+  transform:translate(var(--stick-x,0px),var(--stick-y,0px));
+}
+#touch-tip { position:absolute; left:50%; top:18%; transform:translateX(-50%); padding:5px 10px; border-radius:20px; background:#00000035; color:#fff; font-size:12px; white-space:nowrap; }
+#orientation-tip { display:none; position:absolute; left:0; right:0; top:23%; text-align:center; color:#fff; text-shadow:0 1px 3px #000; }
+@media (orientation:portrait) { #touch-hud:not([hidden]) #orientation-tip { display:block!important; } }
+#touch-hud[data-paused]:not([data-editing]) #touch-stick,
+#touch-hud[data-paused]:not([data-editing]) .touch-actions button,
+#touch-hud[data-paused]:not([data-editing]) #touch-tip,
+#touch-hud[data-paused]:not([data-editing]) #orientation-tip,
+#touch-hud[data-paused]:not([data-editing]) #touch-settings { display:none!important; }
+#touch-hud[data-editing] { z-index:70; background:#0000001a; }
+#touch-hud[data-editing] #touch-tip, #touch-hud[data-editing] #orientation-tip { display:none!important; }
+body[data-editing-controls] #fullscreen { z-index:70; }
+#touch-hud [data-selected], body[data-editing-controls] #fullscreen[data-selected] { outline:3px solid #f7d99a; outline-offset:3px; }
+#touch-editor {
+  position:fixed; z-index:80; left:50%; top:max(8px,env(safe-area-inset-top)); transform:translateX(-50%);
+  width:min(470px,66vw); color:#fff; background:rgba(26,25,24,.92); border:1px solid #ffffff66;
+  border-radius:16px; padding:10px 14px; box-shadow:0 8px 30px #0005; font-size:13px;
+}
+#touch-editor header { display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; }
+#touch-editor header span { font-size:11px; color:#ddd; }
+.edit-size { display:flex; align-items:center; gap:10px; margin:8px 0; }
+.edit-size label { min-width:72px; }
+.edit-size input { flex:1; width:30px; min-width:30px; accent-color:#f7d99a; touch-action:pan-x; }
+.edit-size output { width:40px; text-align:right; }
+.edit-actions { display:flex; gap:8px; }
+#touch-editor button { flex:1; padding:7px 5px; border-radius:9px; background:#ffffff1c; color:white; border:1px solid #ffffff55; font-size:12px; }
+#touch-editor #touch-save { color:#27221a; background:#f5ddb4; }
+#touch-save-status { display:block; font-size:10px; color:#bbb; margin-top:5px; }
+@media (orientation:portrait) { #touch-editor { top:25%; width:90vw; } }
